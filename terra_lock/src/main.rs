@@ -96,10 +96,21 @@ impl Game {
     }
     
     fn update(&mut self) {
+        // マウス座標取得
+        let mouse_pos = Vec2::new(mouse_position().0, mouse_position().1);
+        
+        // TODO: マウス入力処理の実装
         // TODO: ゲームロジックの更新
     }
     
     fn draw(&self) {
+        // マウス座標表示（デバッグ用）
+        let mouse_pos = Vec2::new(mouse_position().0, mouse_position().1);
+        draw_text(
+            &format!("Mouse: ({:.0}, {:.0})", mouse_pos.x, mouse_pos.y),
+            10.0, 50.0, 16.0, GRAY
+        );
+        
         // TODO: 描画処理
     }
 }
