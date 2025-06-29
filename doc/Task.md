@@ -3,10 +3,10 @@
 ## Phase 1: 基盤構築（2時間）
 
 ### Task 1.1: プロジェクト初期化
-- [ ] Rustプロジェクトの作成
-- [ ] macroquadの依存関係追加
-- [ ] Cargo.tomlの設定（WebAssembly対応）
-- [ ] 基本的なmain.rs作成
+- [x] Rustプロジェクトの作成
+- [x] macroquadの依存関係追加
+- [x] Cargo.tomlの設定（WebAssembly対応）
+- [x] 基本的なmain.rs作成
 
 ### Task 1.2: 基本ゲームループ実装
 - [ ] macroquadベースのゲームループ確立

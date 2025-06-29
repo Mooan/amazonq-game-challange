@@ -1,0 +1,13 @@
+[package]
+name = "terra_lock"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+opt-level = "z"          # サイズ最適化
+lto = true               # リンク時最適化
+codegen-units = 1        # 単一コード生成
+panic = "abort"          # パニック時即座終了
+
+[dependencies]
+macroquad = "0.3"
