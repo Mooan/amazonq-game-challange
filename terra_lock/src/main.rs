@@ -48,7 +48,52 @@ struct LockOnLaser {
     speed: f32,
 }
 
-// ロックオンシステム構造体
+// 入力状態管理構造体
+#[derive(Debug, Clone)]
+struct InputState {
+    mouse_pos: Vec2,
+    left_button_pressed: bool,
+    left_button_just_pressed: bool,
+    left_button_just_released: bool,
+    left_button_hold_time: f32,
+}
+
+impl InputState {
+    fn new() -> Self {
+        Self {
+            mouse_pos: Vec2::ZERO,
+            left_button_pressed: false,
+            left_button_just_pressed: false,
+            left_button_just_released: false,
+            left_button_hold_time: 0.0,
+        }
+    }
+    
+    fn update(&mut self, delta_time: f32) {
+        // マウス座標更新
+        self.mouse_pos = Vec2::new(mouse_position().0, mouse_position().1);
+        
+        // マウス左ボタン状態取得
+        let current_pressed = is_mouse_button_down(MouseButton::Left);
+        
+        // 押下・リリース検出
+        self.left_button_just_pressed = !self.left_button_pressed && current_pressed;
+        self.left_button_just_released = self.left_button_pressed && !current_pressed;
+        
+        // 長押し時間更新
+        if current_pressed {
+            self.left_button_hold_time += delta_time;
+        } else {
+            self.left_button_hold_time = 0.0;
+        }
+        
+        self.left_button_pressed = current_pressed;
+    }
+    
+    fn is_long_press(&self) -> bool {
+        self.left_button_hold_time >= 0.2 // 0.2秒以上で長押し判定
+    }
+}
 #[derive(Debug, Clone)]
 struct LockOnSystem {
     active: bool,
@@ -80,6 +125,7 @@ struct Game {
     lock_on_lasers: Vec<LockOnLaser>,
     lock_system: LockOnSystem,
     score: u32,
+    input: InputState,
 }
 
 impl Game {
@@ -92,12 +138,13 @@ impl Game {
             lock_on_lasers: Vec::new(),
             lock_system: LockOnSystem::new(),
             score: 0,
+            input: InputState::new(),
         }
     }
     
-    fn update(&mut self) {
-        // マウス座標取得
-        let mouse_pos = Vec2::new(mouse_position().0, mouse_position().1);
+    fn update(&mut self, delta_time: f32) {
+        // 入力状態更新
+        self.input.update(delta_time);
         
         // TODO: マウス入力処理の実装
         // TODO: ゲームロジックの更新
@@ -105,11 +152,30 @@ impl Game {
     
     fn draw(&self) {
         // マウス座標表示（デバッグ用）
-        let mouse_pos = Vec2::new(mouse_position().0, mouse_position().1);
         draw_text(
-            &format!("Mouse: ({:.0}, {:.0})", mouse_pos.x, mouse_pos.y),
+            &format!("Mouse: ({:.0}, {:.0})", self.input.mouse_pos.x, self.input.mouse_pos.y),
             10.0, 50.0, 16.0, GRAY
         );
+        
+        // マウスボタン状態表示（デバッグ用）
+        let button_status = if self.input.left_button_pressed {
+            if self.input.is_long_press() {
+                format!("Left Button: LONG PRESS ({:.1}s)", self.input.left_button_hold_time)
+            } else {
+                format!("Left Button: PRESSED ({:.1}s)", self.input.left_button_hold_time)
+            }
+        } else {
+            "Left Button: RELEASED".to_string()
+        };
+        draw_text(&button_status, 10.0, 70.0, 16.0, YELLOW);
+        
+        // 押下・リリース瞬間表示
+        if self.input.left_button_just_pressed {
+            draw_text("JUST PRESSED!", 10.0, 90.0, 16.0, GREEN);
+        }
+        if self.input.left_button_just_released {
+            draw_text("JUST RELEASED!", 10.0, 110.0, 16.0, RED);
+        }
         
         // TODO: 描画処理
     }
@@ -127,13 +193,18 @@ async fn main() {
     let mut frame_count = 0;
     let mut last_time = get_time();
     let mut fps_display = 60.0;
+    let mut last_frame_time = get_time();
     
     loop {
         clear_background(BLACK);
         
+        // デルタタイム計算
+        let current_time = get_time();
+        let delta_time = (current_time - last_frame_time) as f32;
+        last_frame_time = current_time;
+        
         // FPS計算と表示
         frame_count += 1;
-        let current_time = get_time();
         if current_time - last_time >= 1.0 {
             fps_display = frame_count as f64 / (current_time - last_time);
             frame_count = 0;
@@ -141,7 +212,7 @@ async fn main() {
         }
         
         // ゲーム更新
-        game.update();
+        game.update(delta_time);
         
         // ゲーム描画
         game.draw();
