@@ -151,6 +151,35 @@ impl Game {
     }
     
     fn draw(&self) {
+        // 基本図形描画機能の確認
+        // 円の描画（敵機用）
+        draw_circle(200.0, 200.0, 10.0, RED);
+        draw_circle_lines(200.0, 200.0, 15.0, 2.0, Color::new(0.5, 0.0, 0.0, 1.0)); // DARKRED
+        
+        // 三角形の描画（自機用）
+        let player_pos = Vec2::new(400.0, 500.0);
+        draw_triangle(
+            Vec2::new(player_pos.x, player_pos.y - 10.0),
+            Vec2::new(player_pos.x - 10.0, player_pos.y + 5.0),
+            Vec2::new(player_pos.x + 10.0, player_pos.y + 5.0),
+            BLUE
+        );
+        
+        // 線の描画（レーザー用）
+        draw_line(100.0, 300.0, 100.0, 250.0, 2.0, Color::new(0.0, 1.0, 1.0, 1.0)); // CYAN
+        draw_line(120.0, 300.0, 150.0, 200.0, 3.0, YELLOW);
+        
+        // 矩形の描画（UI用）
+        draw_rectangle_lines(50.0, 50.0, 200.0, 100.0, 2.0, WHITE);
+        draw_rectangle(60.0, 60.0, 180.0, 80.0, Color::new(0.2, 0.2, 0.2, 0.8));
+        
+        // 図形描画確認テキスト
+        draw_text("Basic Shapes Test:", 300.0, 300.0, 16.0, WHITE);
+        draw_text("Red Circle (Enemy)", 300.0, 320.0, 14.0, RED);
+        draw_text("Blue Triangle (Player)", 300.0, 340.0, 14.0, BLUE);
+        draw_text("Cyan/Yellow Lines (Lasers)", 300.0, 360.0, 14.0, Color::new(0.0, 1.0, 1.0, 1.0)); // CYAN
+        draw_text("White Rectangle (UI)", 300.0, 380.0, 14.0, WHITE);
+        
         // Vec2数学ライブラリの動作確認
         let test_vec1 = Vec2::new(100.0, 50.0);
         let test_vec2 = Vec2::new(50.0, 25.0);
