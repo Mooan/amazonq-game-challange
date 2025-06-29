@@ -151,6 +151,24 @@ impl Game {
     }
     
     fn draw(&self) {
+        // Vec2数学ライブラリの動作確認
+        let test_vec1 = Vec2::new(100.0, 50.0);
+        let test_vec2 = Vec2::new(50.0, 25.0);
+        let vec_sum = test_vec1 + test_vec2;
+        let vec_distance = test_vec1.distance(test_vec2);
+        let vec_length = test_vec1.length();
+        
+        // Vec2演算結果表示（デバッグ用）
+        draw_text(
+            &format!("Vec2 Test: ({:.0}, {:.0}) + ({:.0}, {:.0}) = ({:.0}, {:.0})", 
+                     test_vec1.x, test_vec1.y, test_vec2.x, test_vec2.y, vec_sum.x, vec_sum.y),
+            10.0, 130.0, 14.0, LIGHTGRAY
+        );
+        draw_text(
+            &format!("Distance: {:.1}, Length: {:.1}", vec_distance, vec_length),
+            10.0, 150.0, 14.0, LIGHTGRAY
+        );
+        
         // マウス座標表示（デバッグ用）
         draw_text(
             &format!("Mouse: ({:.0}, {:.0})", self.input.mouse_pos.x, self.input.mouse_pos.y),
