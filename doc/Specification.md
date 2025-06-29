@@ -218,61 +218,7 @@ codegen-units = 1        # 単一コード生成
 panic = "abort"          # パニック時即座終了
 ```
 
-## 実装優先度とタイムライン
 
-### Phase 1: 基盤構築（2時間）
-```bash
-# プロジェクト初期化（15分）
-cargo new terra_lock
-cd terra_lock
-cargo add macroquad
-
-# 基本ゲームループ実装（1.75時間）
-- [ ] macroquadプロジェクト設定
-- [ ] 60FPSゲームループ確立
-- [ ] マウス入力処理実装
-- [ ] 基本描画システム
-- [ ] Vec2数学ライブラリ統合
-```
-
-### Phase 2: コアゲームプレイ（3時間）
-```rust
-// 実装優先順
-- [ ] 自機移動とマウス追従
-- [ ] 敵機生成・移動システム
-- [ ] 通常レーザー発射・当たり判定
-- [ ] スコアシステム基礎
-- [ ] ゲーム状態管理（プレイ中/ゲームオーバー）
-```
-
-### Phase 3: ロックオンシステム（2.5時間）
-```rust
-// N.A.L.S.システム実装
-- [ ] ワイヤーフレーム描画
-- [ ] 空間分割による効率的敵検出
-- [ ] ロックオン状態管理
-- [ ] 複数敵同時ロックオン
-- [ ] ホーミングレーザー軌道計算
-- [ ] 視覚効果（敵の色変化、ロックオン表示）
-```
-
-### Phase 4: 最適化・仕上げ（2時間）
-```rust
-// パフォーマンス・品質向上
-- [ ] リリースビルド最適化
-- [ ] メモリプール実装（敵・レーザー用）
-- [ ] スプライトバッチング
-- [ ] 音響効果統合（Web Audio API）
-- [ ] クロスブラウザテスト
-```
-
-### Phase 5: デプロイメント（30分）
-```bash
-# WebAssemblyビルド・最適化
-cargo build --target wasm32-unknown-unknown --release
-wasm-opt --optimize-for-size target/wasm32-unknown-unknown/release/terra_lock.wasm
-# 静的ホスティングへアップロード
-```
 
 ## 技術的優位性と制約
 
@@ -320,19 +266,7 @@ struct GamePools {
 }
 ```
 
-## 成功基準
 
-### 最小成功基準
-- マウスで自機を操作できる
-- 敵機を通常レーザーで撃破できる
-- ワイヤーフレームが表示される
-- ロックオン→一斉レーザーが機能する
-
-### 理想成功基準
-- 蒼穹紅蓮隊のロックオン体験を再現
-- 60FPS で滑らかに動作
-- 直感的で爽快な操作感
-- スコアシステムが機能
 
 ## 開発環境とビルド設定
 
@@ -360,29 +294,4 @@ codegen-units = 1
 panic = "abort"
 ```
 
-### 開発ワークフロー
-```bash
-# 開発サーバー（ホットリロード）
-cargo watch -x "build --target wasm32-unknown-unknown"
 
-# リリースビルド
-cargo build --target wasm32-unknown-unknown --release
-wasm-opt -Oz target/wasm32-unknown-unknown/release/terra_lock.wasm -o optimized.wasm
-
-# ローカルテスト
-python3 -m http.server 8000
-```
-
-### デバッグ支援機能
-```rust
-#[cfg(debug_assertions)]
-fn debug_render(state: &GameState) {
-    // 当たり判定ボックス可視化
-    for enemy in &state.enemies {
-        draw_circle_lines(enemy.position.x, enemy.position.y, 10.0, 1.0, GREEN);
-    }
-    
-    // FPSカウンター
-    draw_text(&format!("FPS: {}", get_fps()), 10.0, 30.0, 20.0, WHITE);
-}
-```
