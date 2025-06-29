@@ -37,6 +37,8 @@
 - **60FPS維持**: WebAssemblyの高速実行により安定フレームレート
 - **低レイテンシ**: マウス入力からレンダリングまで16ms以内
 - **バンドルサイズ**: 圧縮後500KB以下（macroquadの最適化適用）
+- **クロスブラウザ対応**: Chrome, Firefox, Safari, Edgeでの動作保証
+- **WebAssembly最適化**: ネイティブ性能の80%以上を維持
 
 ## ゲームオブジェクト仕様
 
@@ -179,16 +181,25 @@ impl LockOnSystem {
 ### 開発環境とツールチェーン
 ```
 Rust 1.85+               - 安定版コンパイラ
-macroquad 0.4.x          - クロスプラットフォームゲームエンジン
+macroquad 0.3.x          - WebAssembly対応ゲームエンジン
 wasm-pack 0.13.1         - WebAssembly最適化ツール
 cargo-watch              - ホットリロード（1-3秒）
 VS Code + rust-analyzer  - IDE環境
-wasm-bindgen             - JavaScript連携（音声用）
+wasm-bindgen             - JavaScript連携（ブラウザAPI用）
+```
+
+### WebAssembly実行環境
+```
+Target: wasm32-unknown-unknown
+Bundle Size: <500KB (gzip圧縮後)
+Browser Support: Chrome 57+, Firefox 52+, Safari 11+, Edge 16+
+Performance Target: ネイティブ性能の80%以上
+Memory Usage: <50MB (ヒープ使用量)
 ```
 
 ### アーキテクチャ設計
 ```rust
-// コア構造体（macroquadベース）
+// WebAssembly対応のコア構造体
 struct GameState {
     player: Player,
     enemies: Vec<Enemy>,
@@ -196,6 +207,45 @@ struct GameState {
     lock_system: LockOnSystem,
     score: u32,
 }
+
+// WebAssembly環境検出とパフォーマンス監視
+#[cfg(target_arch = "wasm32")]
+mod web_support {
+    use wasm_bindgen::prelude::*;
+    
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(js_namespace = console)]
+        fn log(s: &str);
+    }
+    
+    pub fn performance_check(frame_time: f64) {
+        if frame_time > 16.67 { // 60FPS threshold
+            log(&format!("Performance warning: {:.2}ms", frame_time));
+        }
+    }
+}
+
+// デュアル環境対応のゲームループ
+#[macroquad::main("Terra Lock")]
+async fn main() {
+    #[cfg(target_arch = "wasm32")]
+    console_log!("WebAssembly environment initialized");
+    
+    loop {
+        let start_time = get_time();
+        
+        clear_background(BLACK);
+        update_game_logic();
+        render_all_objects();
+        
+        #[cfg(target_arch = "wasm32")]
+        web_support::performance_check((get_time() - start_time) * 1000.0);
+        
+        next_frame().await;
+    }
+}
+```
 
 // ゲームループ（60FPS保証）
 #[macroquad::main("Terra Lock")]
