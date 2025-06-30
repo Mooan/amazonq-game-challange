@@ -128,22 +128,26 @@
 - [x] スコアバランスの調整（現状維持）
 - [x] 難易度カーブの実装
 
-## Phase 5: デプロイメント（30分）
+## Phase 5: デプロイメント（GitHub Pages公開）（30分）
 
-### Task 5.1: WebAssemblyビルド
-- [ ] wasm32-unknown-unknownターゲットでのビルド
-- [ ] wasm-optによるサイズ最適化
-- [ ] バンドルサイズの確認（500KB以下）
+### Task 5.1: GitHub Pages準備
+- [x] プロジェクトルートに`docs/`ディレクトリ作成
+- [x] Web版ファイル（index.html, terra_lock.wasm）を`docs/`にコピー
+- [x] GitHub Pages設定用ファイルの準備
 
-### Task 5.2: Webデプロイ準備
-- [ ] HTMLファイルの作成
-- [ ] JavaScriptローダーの実装
-- [ ] 静的ファイルの準備
+### Task 5.2: ドキュメント整備
+- [ ] README.mdの更新
+  - Web版プレイ方法（GitHub Pages URL）
+  - ローカルビルド手順
+  - ゲーム操作説明
+  - 開発経緯
+- [ ] プロジェクト完成報告書の作成
 
-### Task 5.3: 最終テスト
-- [ ] クロスブラウザテスト
-- [ ] パフォーマンステスト
-- [ ] 操作性の最終確認
+### Task 5.3: GitHub Pages公開
+- [ ] GitHubリポジトリへのpush
+- [ ] GitHub Pages設定の有効化
+- [ ] 公開URLでの動作確認
+- [ ] プロジェクト完成版タグの作成
 
 ## 開発ガイドライン
 
