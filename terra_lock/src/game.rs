@@ -410,15 +410,47 @@ impl Game {
             laser.progress = laser.progress.min(1.0);
         }
         
-        // 完了したホーミングレーザーのスコア加算と削除
-        let completed_lasers = self.lock_on_lasers.iter().filter(|laser| laser.progress >= 1.0).count();
-        if completed_lasers > 0 {
+        // 完了したホーミングレーザーの処理と敵機削除
+        let mut completed_targets = Vec::new();
+        let completed_lasers: Vec<_> = self.lock_on_lasers.iter()
+            .filter(|laser| laser.progress >= 1.0)
+            .collect();
+        
+        // 完了したレーザーの対象敵機を収集
+        for laser in &completed_lasers {
+            if let Some(target_id) = laser.target_enemy_id {
+                if target_id < self.enemies.len() {
+                    completed_targets.push(target_id);
+                }
+            }
+        }
+        
+        let completed_count = completed_lasers.len();
+        if completed_count > 0 {
+            // 対象敵機を削除
+            if !completed_targets.is_empty() {
+                // 重複を除去してソート
+                completed_targets.sort_unstable();
+                completed_targets.dedup();
+                
+                // ロックオン解除とターゲットID調整
+                self.lock_system.remove_destroyed_enemies(&completed_targets);
+                self.update_homing_laser_targets(&completed_targets);
+                
+                // 逆順で敵機削除
+                for &target_id in completed_targets.iter().rev() {
+                    if target_id < self.enemies.len() {
+                        self.enemies.remove(target_id);
+                    }
+                }
+            }
+            
             // ロックオンレーザー撃破スコア（200点 × 完了数）
-            let base_score = completed_lasers as u32 * 200;
+            let base_score = completed_count as u32 * 200;
             self.score += base_score;
             
             // 同時ロックオン撃破ボーナス計算
-            let bonus_score = match completed_lasers {
+            let bonus_score = match completed_count {
                 2 => 300,
                 3 => 600,
                 4 => 1000,
@@ -436,9 +468,9 @@ impl Game {
                 self.bonus_displays.push(BonusDisplay::new(bonus_text, display_pos));
                 
                 println!("Lock-on laser hits: {} enemies, +{} points (base) + {} points (bonus) = {} total", 
-                         completed_lasers, base_score, bonus_score, base_score + bonus_score);
+                         completed_count, base_score, bonus_score, base_score + bonus_score);
             } else {
-                println!("Lock-on laser hits: {} enemies, +{} points", completed_lasers, base_score);
+                println!("Lock-on laser hits: {} enemies, +{} points", completed_count, base_score);
             }
         }
         
