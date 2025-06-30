@@ -330,7 +330,14 @@ impl Game {
             laser.progress = laser.progress.min(1.0);
         }
         
-        // 完了したホーミングレーザーを削除
+        // 完了したホーミングレーザーのスコア加算と削除
+        let completed_lasers = self.lock_on_lasers.iter().filter(|laser| laser.progress >= 1.0).count();
+        if completed_lasers > 0 {
+            // ロックオンレーザー撃破スコア（200点 × 完了数）
+            self.score += completed_lasers as u32 * 200;
+            println!("Lock-on laser hits: {} enemies, +{} points", completed_lasers, completed_lasers * 200);
+        }
+        
         self.lock_on_lasers.retain(|laser| laser.progress < 1.0);
         
         // 敵機の更新
