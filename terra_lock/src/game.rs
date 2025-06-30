@@ -388,9 +388,10 @@ impl Game {
         ];
         draw_triangle(vertices[0], vertices[1], vertices[2], BLUE);
         
-        // 敵機の描画 - 赤い円（直径20px）
+        // 敵機の描画 - 赤い円（直径20px）、ロックオン時は黄色
         for enemy in &self.enemies {
-            draw_circle(enemy.position.x, enemy.position.y, 10.0, RED);
+            let color = if enemy.is_locked { YELLOW } else { RED };
+            draw_circle(enemy.position.x, enemy.position.y, 10.0, color);
         }
         
         // 通常レーザーの描画 - シアンの線（幅3px）
@@ -413,7 +414,17 @@ impl Game {
         
         // UI表示
         draw_text(&format!("SCORE: {}", self.score), 20.0, 30.0, 20.0, WHITE);
-        draw_text(&format!("LOCK: {}/6", self.lock_system.locked_enemies.len()), 20.0, 55.0, 16.0, YELLOW);
+        
+        // ロックオン数表示（ロックオン数に応じた色変化）
+        let lock_count = self.lock_system.locked_enemies.len();
+        let lock_color = match lock_count {
+            0 => GRAY,            // ロックオンなし: グレー
+            1..=2 => GREEN,       // 1-2機: 緑
+            3..=4 => YELLOW,      // 3-4機: 黄
+            5..=6 => ORANGE,      // 5-6機: オレンジ
+            _ => RED,             // 7機以上: 赤
+        };
+        draw_text(&format!("LOCK: {}/6", lock_count), 20.0, 55.0, 16.0, lock_color);
     }
     
     fn draw_game_over(&self) {
@@ -455,10 +466,19 @@ impl Game {
     }
     
     fn draw_wireframe(&self) {
-        // ワイヤーフレーム円の描画（点線、白色）
+        // ワイヤーフレーム円の描画（点線、ロックオン数に応じた色変化）
         let segments = 32; // 円を32個の線分で描画
         let radius = self.lock_system.radius;
         let center = self.lock_system.center;
+        
+        // ロックオン数に応じた色変化
+        let wireframe_color = match self.lock_system.locked_enemies.len() {
+            0 => WHITE,           // ロックオンなし: 白
+            1..=2 => GREEN,       // 1-2機: 緑
+            3..=4 => YELLOW,      // 3-4機: 黄
+            5..=6 => ORANGE,      // 5-6機: オレンジ
+            _ => RED,             // 7機以上（通常発生しない）: 赤
+        };
         
         for i in 0..segments {
             // 点線効果のため、偶数番目の線分のみ描画
@@ -471,12 +491,12 @@ impl Game {
                 let x2 = center.x + radius * angle2.cos();
                 let y2 = center.y + radius * angle2.sin();
                 
-                draw_line(x1, y1, x2, y2, 2.0, WHITE);
+                draw_line(x1, y1, x2, y2, 2.0, wireframe_color);
             }
         }
         
         // 中心点の描画
-        draw_circle(center.x, center.y, 3.0, WHITE);
+        draw_circle(center.x, center.y, 3.0, wireframe_color);
     }
     
     fn draw_debug_info(&self, fps: f32) {
