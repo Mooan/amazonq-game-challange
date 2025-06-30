@@ -45,6 +45,7 @@ struct NormalLaser {
 struct LockOnLaser {
     start_pos: Vec2,
     target_pos: Vec2,
+    target_enemy_id: Option<usize>, // 追跡対象の敵機ID
     progress: f32,
     speed: f32,
 }
@@ -256,6 +257,26 @@ struct Game {
 }
 
 impl Game {
+    // ホーミングレーザーのターゲットID調整
+    fn update_homing_laser_targets(&mut self, destroyed_indices: &[usize]) {
+        for laser in &mut self.lock_on_lasers {
+            if let Some(target_id) = laser.target_enemy_id {
+                // 撃破された敵機をターゲットにしている場合、IDをクリア
+                if destroyed_indices.contains(&target_id) {
+                    laser.target_enemy_id = None;
+                } else {
+                    // インデックス調整：撃破された敵機より後ろの敵機のIDを調整
+                    let mut adjusted_id = target_id;
+                    for &destroyed_idx in destroyed_indices.iter().rev() {
+                        if adjusted_id > destroyed_idx {
+                            adjusted_id -= 1;
+                        }
+                    }
+                    laser.target_enemy_id = Some(adjusted_id);
+                }
+            }
+        }
+    }
     fn new() -> Self {
         let mut game = Self {
             state: GameState::Playing,
@@ -372,8 +393,19 @@ impl Game {
         // 寿命切れまたは画面外のレーザーを削除
         self.normal_lasers.retain(|laser| laser.lifetime > 0.0 && laser.position.y > -50.0);
         
-        // ホーミングレーザーの更新
+        // ホーミングレーザーの更新（動的ターゲット追跡）
         for laser in &mut self.lock_on_lasers {
+            // 対象敵機が存在する場合、ターゲット位置を更新
+            if let Some(enemy_id) = laser.target_enemy_id {
+                if enemy_id < self.enemies.len() {
+                    // 敵機の現在位置にターゲットを更新
+                    laser.target_pos = self.enemies[enemy_id].position;
+                } else {
+                    // 対象敵機が削除された場合、IDをクリア
+                    laser.target_enemy_id = None;
+                }
+            }
+            
             laser.progress += laser.speed * delta_time / 1000.0; // 進行度を0-1で管理
             laser.progress = laser.progress.min(1.0);
         }
@@ -475,6 +507,7 @@ impl Game {
                 self.lock_on_lasers.push(LockOnLaser {
                     start_pos: player_pos,
                     target_pos,
+                    target_enemy_id: Some(enemy_idx), // 敵機IDを設定
                     progress: 0.0,
                     speed: 400.0, // 400px/秒でホーミング
                 });
@@ -541,6 +574,8 @@ impl Game {
         // 撃破された敵機のロックオン解除（敵機削除前に実行）
         if !enemies_to_remove.is_empty() {
             self.lock_system.remove_destroyed_enemies(&enemies_to_remove);
+            // ホーミングレーザーのターゲットID調整
+            self.update_homing_laser_targets(&enemies_to_remove);
         }
         
         // 逆順で削除（インデックスのずれを防ぐ）
