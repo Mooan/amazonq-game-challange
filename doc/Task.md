@@ -71,7 +71,7 @@
 - [x] ゲームリスタート機能
 
 ### Task 2.7: WebAssembly継続検証（Phase 2）
-- [ ] Phase 2完了時のWebAssembly動作確認
+- [x] Phase 2完了時のWebAssembly動作確認
 
 ## Phase 3: ロックオンシステム（2.5時間）
 
