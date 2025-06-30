@@ -136,7 +136,7 @@ struct Game {
 
 impl Game {
     fn new() -> Self {
-        Self {
+        let mut game = Self {
             state: GameState::Playing,
             player: Player::new(),
             enemies: Vec::new(),
@@ -145,7 +145,17 @@ impl Game {
             lock_system: LockOnSystem::new(),
             score: 0,
             input: InputState::new(),
-        }
+        };
+        
+        // テスト用敵機を追加（描画確認用）
+        game.enemies.push(Enemy {
+            position: Vec2::new(200.0, 100.0),
+            velocity: Vec2::new(0.0, 120.0), // 120px/秒で下向き
+            is_locked: false,
+            lock_timer: 0.0,
+        });
+        
+        game
     }
     
     fn update(&mut self, delta_time: f32) {
