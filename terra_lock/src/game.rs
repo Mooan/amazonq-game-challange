@@ -308,10 +308,21 @@ impl Game {
             self.fire_normal_laser();
         }
         
-        // 敵機出現システム
+        // 敵機出現システム（ロックオン動作確認用に強化）
         self.enemy_spawn_timer += delta_time;
-        if self.enemy_spawn_timer >= 3.0 { // 3秒間隔で出現
-            self.spawn_enemy();
+        if self.enemy_spawn_timer >= 1.5 { // 1.5秒間隔で出現（短縮）
+            // 30%の確率で2機同時出現、10%の確率で3機同時出現
+            let spawn_count = if gen_range(0.0, 1.0) < 0.1 {
+                3 // 10%の確率で3機
+            } else if gen_range(0.0, 1.0) < 0.3 {
+                2 // 30%の確率で2機
+            } else {
+                1 // 60%の確率で1機
+            };
+            
+            for _ in 0..spawn_count {
+                self.spawn_enemy();
+            }
             self.enemy_spawn_timer = 0.0;
         }
         
@@ -334,8 +345,26 @@ impl Game {
         let completed_lasers = self.lock_on_lasers.iter().filter(|laser| laser.progress >= 1.0).count();
         if completed_lasers > 0 {
             // ロックオンレーザー撃破スコア（200点 × 完了数）
-            self.score += completed_lasers as u32 * 200;
-            println!("Lock-on laser hits: {} enemies, +{} points", completed_lasers, completed_lasers * 200);
+            let base_score = completed_lasers as u32 * 200;
+            self.score += base_score;
+            
+            // 同時ロックオン撃破ボーナス計算
+            let bonus_score = match completed_lasers {
+                2 => 300,
+                3 => 600,
+                4 => 1000,
+                5 => 1500,
+                6 => 2100,
+                _ => 0,
+            };
+            
+            if bonus_score > 0 {
+                self.score += bonus_score;
+                println!("Lock-on laser hits: {} enemies, +{} points (base) + {} points (bonus) = {} total", 
+                         completed_lasers, base_score, bonus_score, base_score + bonus_score);
+            } else {
+                println!("Lock-on laser hits: {} enemies, +{} points", completed_lasers, base_score);
+            }
         }
         
         self.lock_on_lasers.retain(|laser| laser.progress < 1.0);
@@ -491,7 +520,17 @@ impl Game {
         let enemy_radius = 10.0;
         
         // 画面上部のランダムな位置に敵機を生成
-        let x = gen_range(enemy_radius, screen_width - enemy_radius);
+        // 既存の敵機がある場合は、近い位置に配置する確率を上げる
+        let x = if !self.enemies.is_empty() && gen_range(0.0, 1.0) < 0.4 {
+            // 40%の確率で既存の敵機の近くに配置
+            let existing_enemy = &self.enemies[gen_range(0, self.enemies.len())];
+            let offset = gen_range(-100.0, 100.0);
+            (existing_enemy.position.x + offset).clamp(enemy_radius, screen_width - enemy_radius)
+        } else {
+            // 通常のランダム配置
+            gen_range(enemy_radius, screen_width - enemy_radius)
+        };
+        
         let y = -enemy_radius; // 画面上部の少し外側から出現
         
         self.enemies.push(Enemy {
