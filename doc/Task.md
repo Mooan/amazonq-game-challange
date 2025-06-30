@@ -25,10 +25,10 @@
 - [x] 画面サイズ設定（800x600px）
 
 ### Task 1.5: WebAssembly環境構築（リスク対策）
-- [ ] WebAssemblyツールチェーンの追加
-- [ ] 基本的なWeb環境テスト用HTMLファイル作成
-- [ ] WebAssembly初回ビルドと動作確認
-- [ ] デュアル環境開発体制の確立
+- [x] WebAssemblyツールチェーンの追加
+- [x] 基本的なWeb環境テスト用HTMLファイル作成
+- [x] WebAssembly初回ビルドと動作確認
+- [x] デュアル環境開発体制の確立
 
 ## Phase 2: コアゲームプレイ（3時間）
 
