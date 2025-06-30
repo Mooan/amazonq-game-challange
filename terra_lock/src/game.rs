@@ -1,4 +1,5 @@
 use macroquad::prelude::*;
+use macroquad::rand::gen_range;
 
 #[derive(Clone, Debug)]
 enum GameState {
@@ -132,6 +133,7 @@ struct Game {
     lock_system: LockOnSystem,
     score: u32,
     input: InputState,
+    enemy_spawn_timer: f32,
 }
 
 impl Game {
@@ -145,6 +147,7 @@ impl Game {
             lock_system: LockOnSystem::new(),
             score: 0,
             input: InputState::new(),
+            enemy_spawn_timer: 0.0,
         };
         
         // テスト用敵機を追加（描画確認用）
@@ -180,6 +183,13 @@ impl Game {
         
         self.player.position = Vec2::new(clamped_x, clamped_y);
         
+        // 敵機出現システム
+        self.enemy_spawn_timer += delta_time;
+        if self.enemy_spawn_timer >= 3.0 { // 3秒間隔で出現
+            self.spawn_enemy();
+            self.enemy_spawn_timer = 0.0;
+        }
+        
         // 敵機の更新
         for enemy in &mut self.enemies {
             enemy.position += enemy.velocity * delta_time;
@@ -188,8 +198,23 @@ impl Game {
         // 画面外の敵機を削除
         self.enemies.retain(|enemy| enemy.position.y < screen_height + 50.0);
         
-        // TODO: 敵機の生成処理
         // TODO: その他のゲームロジックの更新
+    }
+    
+    fn spawn_enemy(&mut self) {
+        let screen_width = 800.0;
+        let enemy_radius = 10.0;
+        
+        // 画面上部のランダムな位置に敵機を生成
+        let x = gen_range(enemy_radius, screen_width - enemy_radius);
+        let y = -enemy_radius; // 画面上部の少し外側から出現
+        
+        self.enemies.push(Enemy {
+            position: Vec2::new(x, y),
+            velocity: Vec2::new(0.0, 120.0), // 120px/秒で下向き移動
+            is_locked: false,
+            lock_timer: 0.0,
+        });
     }
     
     fn draw(&self) {
