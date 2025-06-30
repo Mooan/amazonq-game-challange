@@ -1,6 +1,6 @@
 # Terra Lock - Web版
 
-蒼穹紅蓮隊風ロックオンレーザーゲーム「Terra Lock」のWeb版です。
+ロックオンレーザーゲーム「Terra Lock」のWeb版です。
 
 ## プレイ方法
 

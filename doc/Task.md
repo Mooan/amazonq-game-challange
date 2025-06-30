@@ -135,20 +135,6 @@
 - [x] Web版ファイル（index.html, terra_lock.wasm）を`docs/`にコピー
 - [x] GitHub Pages設定用ファイルの準備
 
-### Task 5.2: ドキュメント整備
-- [ ] README.mdの更新
-  - Web版プレイ方法（GitHub Pages URL）
-  - ローカルビルド手順
-  - ゲーム操作説明
-  - 開発経緯
-- [ ] プロジェクト完成報告書の作成
-
-### Task 5.3: GitHub Pages公開
-- [ ] GitHubリポジトリへのpush
-- [ ] GitHub Pages設定の有効化
-- [ ] 公開URLでの動作確認
-- [ ] プロジェクト完成版タグの作成
-
 ## 開発ガイドライン
 
 ### コミット戦略
