@@ -262,9 +262,36 @@ impl Game {
         if self.input.is_long_press() {
             self.lock_system.active = true;
             self.lock_system.center = self.input.mouse_pos;
+            
+            // ワイヤーフレーム内の敵機検出
+            self.detect_enemies_in_wireframe();
         } else {
             self.lock_system.active = false;
             self.lock_system.locked_enemies.clear();
+        }
+    }
+    
+    fn detect_enemies_in_wireframe(&mut self) {
+        // 全ての敵機のロックオン状態をリセット
+        for enemy in &mut self.enemies {
+            enemy.is_locked = false;
+        }
+        
+        self.lock_system.locked_enemies.clear();
+        
+        for (enemy_idx, enemy) in self.enemies.iter_mut().enumerate() {
+            // 距離計算による判定（平方根回避最適化）
+            let distance_squared = (enemy.position.x - self.lock_system.center.x).powi(2)
+                                 + (enemy.position.y - self.lock_system.center.y).powi(2);
+            let radius_squared = self.lock_system.radius.powi(2);
+            
+            if distance_squared <= radius_squared {
+                // 最大6機までのロックオン制限
+                if self.lock_system.locked_enemies.len() < self.lock_system.max_targets as usize {
+                    self.lock_system.locked_enemies.push(enemy_idx);
+                    enemy.is_locked = true;
+                }
+            }
         }
     }
     
@@ -386,7 +413,7 @@ impl Game {
         
         // UI表示
         draw_text(&format!("SCORE: {}", self.score), 20.0, 30.0, 20.0, WHITE);
-        draw_text("LOCK: 0/6", 20.0, 55.0, 16.0, YELLOW);
+        draw_text(&format!("LOCK: {}/6", self.lock_system.locked_enemies.len()), 20.0, 55.0, 16.0, YELLOW);
     }
     
     fn draw_game_over(&self) {
