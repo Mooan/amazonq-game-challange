@@ -183,12 +183,26 @@ impl Game {
         
         self.player.position = Vec2::new(clamped_x, clamped_y);
         
+        // 通常レーザーの発射（左クリック）
+        if self.input.left_button_just_pressed {
+            self.fire_normal_laser();
+        }
+        
         // 敵機出現システム
         self.enemy_spawn_timer += delta_time;
         if self.enemy_spawn_timer >= 3.0 { // 3秒間隔で出現
             self.spawn_enemy();
             self.enemy_spawn_timer = 0.0;
         }
+        
+        // 通常レーザーの更新
+        for laser in &mut self.normal_lasers {
+            laser.position += laser.velocity * delta_time;
+            laser.lifetime -= delta_time;
+        }
+        
+        // 寿命切れまたは画面外のレーザーを削除
+        self.normal_lasers.retain(|laser| laser.lifetime > 0.0 && laser.position.y > -50.0);
         
         // 敵機の更新
         for enemy in &mut self.enemies {
@@ -199,6 +213,15 @@ impl Game {
         self.enemies.retain(|enemy| enemy.position.y < screen_height + 50.0);
         
         // TODO: その他のゲームロジックの更新
+    }
+    
+    fn fire_normal_laser(&mut self) {
+        // プレイヤーの位置から上向きにレーザーを発射
+        self.normal_lasers.push(NormalLaser {
+            position: self.player.position,
+            velocity: Vec2::new(0.0, -300.0), // 300px/秒で上向き
+            lifetime: 3.0, // 3秒間の寿命
+        });
     }
     
     fn spawn_enemy(&mut self) {
@@ -234,8 +257,18 @@ impl Game {
             draw_circle(enemy.position.x, enemy.position.y, 10.0, RED);
         }
         
-        // テスト用のレーザー描画（後で削除予定）
-        draw_line(100.0, 100.0, 200.0, 150.0, 2.0, Color::new(0.0, 1.0, 1.0, 1.0)); // CYAN
+        // 通常レーザーの描画 - シアンの線（幅3px）
+        for laser in &self.normal_lasers {
+            let laser_length = 15.0; // レーザーの長さ
+            draw_line(
+                laser.position.x, 
+                laser.position.y - laser_length / 2.0,
+                laser.position.x, 
+                laser.position.y + laser_length / 2.0,
+                3.0, 
+                Color::new(0.0, 1.0, 1.0, 1.0) // CYAN
+            );
+        }
         
         // UI表示
         draw_text("SCORE: 0", 20.0, 30.0, 20.0, WHITE);
