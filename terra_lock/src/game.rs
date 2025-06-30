@@ -152,8 +152,23 @@ impl Game {
         // 入力状態更新
         self.input.update(delta_time);
         
-        // プレイヤーの位置をマウス座標に更新
-        self.player.position = self.input.mouse_pos;
+        // プレイヤーの位置をマウス座標に更新（画面内制限付き）
+        let screen_width = 800.0;
+        let screen_height = 600.0;
+        let player_half_width = 10.0;  // 自機の半分の幅（20px / 2）
+        let player_half_height = 7.5;  // 自機の半分の高さ（15px / 2）
+        
+        // マウス座標を画面内に制限
+        let clamped_x = self.input.mouse_pos.x.clamp(
+            player_half_width, 
+            screen_width - player_half_width
+        );
+        let clamped_y = self.input.mouse_pos.y.clamp(
+            player_half_height, 
+            screen_height - player_half_height
+        );
+        
+        self.player.position = Vec2::new(clamped_x, clamped_y);
         
         // TODO: その他のゲームロジックの更新
     }
