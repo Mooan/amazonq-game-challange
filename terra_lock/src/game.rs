@@ -152,35 +152,30 @@ impl Game {
         // 入力状態更新
         self.input.update(delta_time);
         
-        // TODO: マウス入力処理の実装
-        // TODO: ゲームロジックの更新
+        // プレイヤーの位置をマウス座標に更新
+        self.player.position = self.input.mouse_pos;
+        
+        // TODO: その他のゲームロジックの更新
     }
     
     fn draw(&self) {
-        // 基本図形描画機能の確認
-        // 円の描画（敵機用）
-        draw_circle(200.0, 200.0, 10.0, RED);
-        draw_circle_lines(200.0, 200.0, 15.0, 2.0, Color::new(0.5, 0.0, 0.0, 1.0)); // DARKRED
-        
-        // 三角形の描画（自機用）
-        let player_pos = Vec2::new(400.0, 500.0);
-        let size = 10.0;
+        // プレイヤー（自機）の描画 - 青い三角形（20x15px）
+        let player_pos = self.player.position;
+        let size = 10.0; // 20x15pxの半分のサイズ
         let vertices = [
-            Vec2::new(player_pos.x, player_pos.y - size),
-            Vec2::new(player_pos.x - size * 0.8, player_pos.y + size),
-            Vec2::new(player_pos.x + size * 0.8, player_pos.y + size),
+            Vec2::new(player_pos.x, player_pos.y - size),           // 上頂点
+            Vec2::new(player_pos.x - size * 0.8, player_pos.y + size * 0.75), // 左下
+            Vec2::new(player_pos.x + size * 0.8, player_pos.y + size * 0.75), // 右下
         ];
         draw_triangle(vertices[0], vertices[1], vertices[2], BLUE);
         
-        // 線の描画（レーザー用）
+        // テスト用の敵機描画（後で削除予定）
+        draw_circle(200.0, 200.0, 10.0, RED);
+        
+        // テスト用のレーザー描画（後で削除予定）
         draw_line(100.0, 100.0, 200.0, 150.0, 2.0, Color::new(0.0, 1.0, 1.0, 1.0)); // CYAN
-        draw_line(300.0, 100.0, 400.0, 150.0, 3.0, Color::new(1.0, 1.0, 0.0, 1.0)); // YELLOW
         
-        // 矩形の描画（UI要素用）
-        draw_rectangle_lines(50.0, 50.0, 100.0, 50.0, 2.0, WHITE);
-        draw_rectangle(60.0, 60.0, 80.0, 30.0, Color::new(0.2, 0.2, 0.2, 0.8));
-        
-        // テキスト描画（スコア表示用）
+        // UI表示
         draw_text("SCORE: 0", 20.0, 30.0, 20.0, WHITE);
         draw_text("LOCK: 0/6", 20.0, 55.0, 16.0, YELLOW);
     }
