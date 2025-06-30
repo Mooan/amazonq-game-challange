@@ -138,6 +138,39 @@ impl LockOnSystem {
         
         println!("All lock-on targets cleared");
     }
+    
+    // ワイヤーフレーム外に移動した敵機の解除
+    fn remove_out_of_range_targets(&mut self, enemies: &mut [Enemy]) {
+        let mut removed_count = 0;
+        
+        // 後ろから削除して、インデックスのずれを防ぐ
+        for i in (0..self.locked_enemies.len()).rev() {
+            let enemy_idx = self.locked_enemies[i];
+            
+            if enemy_idx < enemies.len() {
+                let enemy = &enemies[enemy_idx];
+                
+                // 距離計算（平方根回避最適化）
+                let distance_squared = (enemy.position.x - self.center.x).powi(2)
+                                     + (enemy.position.y - self.center.y).powi(2);
+                let radius_squared = self.radius.powi(2);
+                
+                // ワイヤーフレーム外に移動した場合
+                if distance_squared > radius_squared {
+                    // 敵機のロックオン状態を解除
+                    enemies[enemy_idx].is_locked = false;
+                    
+                    // ロックオンリストから削除
+                    self.locked_enemies.remove(i);
+                    removed_count += 1;
+                }
+            }
+        }
+        
+        if removed_count > 0 {
+            println!("Removed {} targets that moved out of wireframe", removed_count);
+        }
+    }
 }
 
 // メインゲーム構造体
@@ -292,6 +325,9 @@ impl Game {
             
             // ワイヤーフレーム内の敵機検出
             self.detect_enemies_in_wireframe();
+            
+            // ワイヤーフレーム外に移動した敵機の解除
+            self.lock_system.remove_out_of_range_targets(&mut self.enemies);
         } else if self.input.left_button_just_released && self.lock_system.active {
             // マウスボタンリリース時の処理
             if !self.lock_system.locked_enemies.is_empty() {
