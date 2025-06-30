@@ -352,6 +352,35 @@ impl Game {
             screen_width() - 250.0, 80.0, 16.0, button_color
         );
     }
+    
+    fn check_player_enemy_collision(&mut self) {
+        let player_half_width = 10.0;  // 自機の半分の幅
+        let player_half_height = 7.5;  // 自機の半分の高さ
+        let enemy_radius: f32 = 10.0;   // 敵機の半径
+        
+        for enemy in &self.enemies {
+            // 矩形（自機）と円（敵機）の当たり判定
+            // 自機の矩形の境界を計算
+            let player_left = self.player.position.x - player_half_width;
+            let player_right = self.player.position.x + player_half_width;
+            let player_top = self.player.position.y - player_half_height;
+            let player_bottom = self.player.position.y + player_half_height;
+            
+            // 敵機の円の中心から自機の矩形への最短距離を計算
+            let closest_x = enemy.position.x.clamp(player_left, player_right);
+            let closest_y = enemy.position.y.clamp(player_top, player_bottom);
+            
+            let distance_squared = (enemy.position.x - closest_x).powi(2) 
+                                 + (enemy.position.y - closest_y).powi(2);
+            
+            if distance_squared <= enemy_radius.powi(2) {
+                // 自機と敵機が衝突した場合
+                // TODO: ゲームオーバー処理（Task 2.6で実装予定）
+                println!("Player hit by enemy! Game Over!");
+                break;
+            }
+        }
+    }
 }
 
 // WebAssembly対応のメイン関数
