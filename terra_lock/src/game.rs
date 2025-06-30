@@ -753,6 +753,17 @@ impl Game {
                 color
             );
         }
+
+        // 操作説明の表示（画面下部、小文字、薄いグレー）
+        let instruction_text = "Mouse: Move | Click: Shoot | Hold: Lock-on";
+        let text_width = 12.0 * instruction_text.len() as f32 * 0.6; // 概算幅
+        draw_text(
+            instruction_text,
+            (800.0 - text_width) / 2.0, // 中央揃え
+            580.0, // 画面下部（600px - 20px）
+            12.0,  // 12px フォントサイズ
+            Color::new(0.7, 0.7, 0.7, 1.0) // 薄いグレー
+        );
     }
     
     fn draw_game_over(&self) {
