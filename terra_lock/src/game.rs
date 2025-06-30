@@ -236,6 +236,10 @@ impl Game {
                     // 当たり判定発生
                     lasers_to_remove.push(laser_idx);
                     enemies_to_remove.push(enemy_idx);
+                    
+                    // 通常レーザー撃破時のスコア加算（100点）
+                    self.score += 100;
+                    
                     break; // このレーザーは1つの敵にのみ当たる
                 }
             }
@@ -317,7 +321,7 @@ impl Game {
         }
         
         // UI表示
-        draw_text("SCORE: 0", 20.0, 30.0, 20.0, WHITE);
+        draw_text(&format!("SCORE: {}", self.score), 20.0, 30.0, 20.0, WHITE);
         draw_text("LOCK: 0/6", 20.0, 55.0, 16.0, YELLOW);
     }
     
