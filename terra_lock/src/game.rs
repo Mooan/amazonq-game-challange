@@ -240,6 +240,15 @@ impl Game {
         // 寿命切れまたは画面外のレーザーを削除
         self.normal_lasers.retain(|laser| laser.lifetime > 0.0 && laser.position.y > -50.0);
         
+        // ホーミングレーザーの更新
+        for laser in &mut self.lock_on_lasers {
+            laser.progress += laser.speed * delta_time / 1000.0; // 進行度を0-1で管理
+            laser.progress = laser.progress.min(1.0);
+        }
+        
+        // 完了したホーミングレーザーを削除
+        self.lock_on_lasers.retain(|laser| laser.progress < 1.0);
+        
         // 敵機の更新
         for enemy in &mut self.enemies {
             enemy.position += enemy.velocity * delta_time;
@@ -265,10 +274,35 @@ impl Game {
             
             // ワイヤーフレーム内の敵機検出
             self.detect_enemies_in_wireframe();
-        } else {
+        } else if self.input.left_button_just_released && self.lock_system.active {
+            // マウスボタンリリース時の一斉発射
+            self.fire_lock_on_lasers();
+            
+            self.lock_system.active = false;
+            self.lock_system.locked_enemies.clear();
+        } else if !self.input.left_button_pressed {
             self.lock_system.active = false;
             self.lock_system.locked_enemies.clear();
         }
+    }
+    
+    fn fire_lock_on_lasers(&mut self) {
+        let player_pos = self.player.position;
+        
+        for &enemy_idx in &self.lock_system.locked_enemies {
+            if enemy_idx < self.enemies.len() {
+                let target_pos = self.enemies[enemy_idx].position;
+                
+                self.lock_on_lasers.push(LockOnLaser {
+                    start_pos: player_pos,
+                    target_pos,
+                    progress: 0.0,
+                    speed: 400.0, // 400px/秒でホーミング
+                });
+            }
+        }
+        
+        println!("Fired {} lock-on lasers!", self.lock_system.locked_enemies.len());
     }
     
     fn detect_enemies_in_wireframe(&mut self) {
@@ -407,6 +441,26 @@ impl Game {
             );
         }
         
+        // ホーミングレーザーの描画 - 黄色い追尾線
+        for laser in &self.lock_on_lasers {
+            // ベジェ曲線による軌道計算
+            let current_pos = self.calculate_homing_position(laser);
+            
+            // レーザーの軌跡を描画（複数の線分で曲線を表現）
+            let segments = 10;
+            for i in 0..segments {
+                let t1 = (i as f32) / (segments as f32) * laser.progress;
+                let t2 = ((i + 1) as f32) / (segments as f32) * laser.progress;
+                
+                if t2 <= laser.progress {
+                    let pos1 = self.calculate_bezier_point(laser.start_pos, laser.target_pos, t1);
+                    let pos2 = self.calculate_bezier_point(laser.start_pos, laser.target_pos, t2);
+                    
+                    draw_line(pos1.x, pos1.y, pos2.x, pos2.y, 2.0, YELLOW);
+                }
+            }
+        }
+        
         // ワイヤーフレーム描画（ロックオンシステム）
         if self.lock_system.active {
             self.draw_wireframe();
@@ -497,6 +551,29 @@ impl Game {
         
         // 中心点の描画
         draw_circle(center.x, center.y, 3.0, wireframe_color);
+    }
+    
+    fn calculate_homing_position(&self, laser: &LockOnLaser) -> Vec2 {
+        self.calculate_bezier_point(laser.start_pos, laser.target_pos, laser.progress)
+    }
+    
+    fn calculate_bezier_point(&self, start: Vec2, target: Vec2, t: f32) -> Vec2 {
+        // 2次ベジェ曲線による軌道計算
+        // 制御点は開始点と目標点の中間の上方に設定
+        let mid_x = (start.x + target.x) / 2.0;
+        let mid_y = (start.y + target.y) / 2.0 - 100.0; // 上方に100px
+        let control_point = Vec2::new(mid_x, mid_y);
+        
+        // ベジェ曲線の計算: B(t) = (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+        let t_inv = 1.0 - t;
+        let t_inv_sq = t_inv * t_inv;
+        let t_sq = t * t;
+        let t_2_inv = 2.0 * t * t_inv;
+        
+        Vec2::new(
+            t_inv_sq * start.x + t_2_inv * control_point.x + t_sq * target.x,
+            t_inv_sq * start.y + t_2_inv * control_point.y + t_sq * target.y,
+        )
     }
     
     fn draw_debug_info(&self, fps: f32) {
