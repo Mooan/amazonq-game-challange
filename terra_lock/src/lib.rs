@@ -13,9 +13,7 @@ pub fn main_web() {
     std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     console_log::init_with_level(log::Level::Debug).expect("error initializing log");
     
-    wasm_bindgen_futures::spawn_local(async {
-        game::main().await;
-    });
+    log::info!("Terra Lock WebAssembly module initialized");
 }
 
 // WebAssembly用のコンソールログ設定

@@ -50,7 +50,7 @@ cargo build --release
 ./target/release/terra_lock
 ```
 
-### WebAssembly環境 (本番用)
+### WebAssembly環境 (実験的)
 
 #### WebAssemblyビルド
 ```bash
@@ -71,15 +71,10 @@ python3 -m http.server 8000
 # http://localhost:8000/index.html
 ```
 
-#### 本格的なWebサーバー (推奨)
-```bash
-# Node.js + serve
-npm install -g serve
-cd web
-serve -s . -p 8000
-
-# または nginx, Apache等の設定
-```
+**⚠️ WebAssembly制限事項:**
+- 現在、macroquad 0.3.xのWebAssembly対応には制限があります
+- WebAssemblyビルドは成功しますが、ブラウザでの実行時にモジュール解決エラーが発生する場合があります
+- 開発は主にネイティブ環境で行い、WebAssemblyは将来のmacroquadアップデートで対応予定です
 
 ## 開発ワークフロー
 
@@ -89,16 +84,14 @@ serve -s . -p 8000
    cargo watch -x run
    ```
 
-2. **定期的なWebAssembly検証**
+2. **定期的なWebAssemblyビルド確認**
    ```bash
    wasm-pack build --target web --out-dir web/pkg --features web
-   cd web && python3 -m http.server 8000
    ```
 
 3. **リリース前の最終確認**
    ```bash
    cargo build --release
-   wasm-pack build --target web --out-dir web/pkg --features web --release
    ```
 
 ## プロジェクト構造
@@ -120,7 +113,7 @@ terra_lock/
 
 ### 現在の達成値
 - **WebAssemblyファイルサイズ**: 36KB (目標: <500KB)
-- **フレームレート**: 60FPS安定
+- **フレームレート**: 60FPS安定 (ネイティブ環境)
 - **ビルド時間**: ネイティブ <1秒, WebAssembly <15秒
 
 ### 最適化設定
@@ -155,44 +148,46 @@ cargo build
 xcode-select --install
 ```
 
-#### 3. Web環境でのCORSエラー
+#### 3. WebAssembly実行時エラー
 ```bash
-# ローカルファイルアクセスではなくHTTPサーバーを使用
-python3 -m http.server 8000
-# または
-npx serve web -p 8000
+# 現在の制限事項により、以下のエラーが発生する場合があります:
+# "Failed to resolve module specifier 'env'"
+# 
+# 対処法:
+# - ネイティブ環境での開発を推奨
+# - macroquadの将来のアップデートを待つ
+# - 代替WebAssembly対応ゲームエンジンの検討
 ```
 
 #### 4. パフォーマンス問題
 ```bash
 # リリースビルドを使用
 cargo build --release
-wasm-pack build --release --target web --out-dir web/pkg --features web
 
 # FPS監視機能でボトルネック特定
-# 画面右上のFPS表示を確認
+# 画面右上のFPS表示を確認 (ネイティブ環境)
 ```
 
 ## ブラウザ対応状況
 
-### 対応ブラウザ
-- ✅ Chrome 57+
-- ✅ Firefox 52+
-- ✅ Safari 11+
-- ✅ Edge 16+
+### 対応予定ブラウザ
+- Chrome 57+
+- Firefox 52+
+- Safari 11+
+- Edge 16+
 
-### WebAssembly機能要件
-- WebAssembly MVP対応
-- Canvas API対応
-- Mouse Events対応
-- RequestAnimationFrame対応
+**注意**: 現在WebAssembly実行時に制限があります。
 
 ## デバッグ機能
 
+### ネイティブ環境
 - **FPS表示**: 画面右上（緑=60fps, 黄=45-59fps, 赤=<45fps）
 - **マウス座標**: リアルタイム表示
 - **ボタン状態**: 押下・長押し・リリース検出
-- **コンソールログ**: WebAssembly環境でのデバッグ出力
+
+### WebAssembly環境
+- **基本ログ**: ブラウザコンソールに出力
+- **モジュール読み込み**: 成功/失敗の表示
 
 ## 関連ドキュメント
 
@@ -212,4 +207,5 @@ wasm-pack build --release --target web --out-dir web/pkg --features web
 ---
 
 **最終更新**: 2025-06-30  
-**バージョン**: Phase 1 Complete (v0.1.0)
+**バージョン**: Phase 1 Complete (v0.1.0)  
+**WebAssembly対応**: 実験的（制限あり）
