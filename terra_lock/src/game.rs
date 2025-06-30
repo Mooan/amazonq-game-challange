@@ -216,8 +216,11 @@ impl Game {
         
         self.player.position = Vec2::new(clamped_x, clamped_y);
         
-        // 通常レーザーの発射（左クリック）
-        if self.input.left_button_just_pressed {
+        // ロックオンシステムの更新
+        self.update_lock_on_system();
+        
+        // 通常レーザーの発射（左クリック短押し）
+        if self.input.left_button_just_pressed && !self.lock_system.active {
             self.fire_normal_laser();
         }
         
@@ -252,6 +255,17 @@ impl Game {
         self.enemies.retain(|enemy| enemy.position.y < screen_height + 50.0);
         
         // TODO: その他のゲームロジックの更新
+    }
+    
+    fn update_lock_on_system(&mut self) {
+        // マウス長押し検出でワイヤーフレーム展開
+        if self.input.is_long_press() {
+            self.lock_system.active = true;
+            self.lock_system.center = self.input.mouse_pos;
+        } else {
+            self.lock_system.active = false;
+            self.lock_system.locked_enemies.clear();
+        }
     }
     
     fn check_laser_enemy_collision(&mut self) {
@@ -365,6 +379,11 @@ impl Game {
             );
         }
         
+        // ワイヤーフレーム描画（ロックオンシステム）
+        if self.lock_system.active {
+            self.draw_wireframe();
+        }
+        
         // UI表示
         draw_text(&format!("SCORE: {}", self.score), 20.0, 30.0, 20.0, WHITE);
         draw_text("LOCK: 0/6", 20.0, 55.0, 16.0, YELLOW);
@@ -406,6 +425,31 @@ impl Game {
             20.0,
             YELLOW
         );
+    }
+    
+    fn draw_wireframe(&self) {
+        // ワイヤーフレーム円の描画（点線、白色）
+        let segments = 32; // 円を32個の線分で描画
+        let radius = self.lock_system.radius;
+        let center = self.lock_system.center;
+        
+        for i in 0..segments {
+            // 点線効果のため、偶数番目の線分のみ描画
+            if i % 2 == 0 {
+                let angle1 = (i as f32) * 2.0 * std::f32::consts::PI / (segments as f32);
+                let angle2 = ((i + 1) as f32) * 2.0 * std::f32::consts::PI / (segments as f32);
+                
+                let x1 = center.x + radius * angle1.cos();
+                let y1 = center.y + radius * angle1.sin();
+                let x2 = center.x + radius * angle2.cos();
+                let y2 = center.y + radius * angle2.sin();
+                
+                draw_line(x1, y1, x2, y2, 2.0, WHITE);
+            }
+        }
+        
+        // 中心点の描画
+        draw_circle(center.x, center.y, 3.0, WHITE);
     }
     
     fn draw_debug_info(&self, fps: f32) {
