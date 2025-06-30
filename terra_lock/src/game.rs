@@ -171,6 +171,39 @@ impl LockOnSystem {
             println!("Removed {} targets that moved out of wireframe", removed_count);
         }
     }
+    
+    // 撃破された敵機のロックオン解除
+    fn remove_destroyed_enemies(&mut self, destroyed_indices: &[usize]) {
+        if destroyed_indices.is_empty() {
+            return;
+        }
+        
+        let mut removed_count = 0;
+        
+        // 後ろから削除して、インデックスのずれを防ぐ
+        for i in (0..self.locked_enemies.len()).rev() {
+            let enemy_idx = self.locked_enemies[i];
+            
+            // 撃破された敵機のインデックスと一致するかチェック
+            if destroyed_indices.contains(&enemy_idx) {
+                self.locked_enemies.remove(i);
+                removed_count += 1;
+            }
+        }
+        
+        // インデックス調整：撃破された敵機より後ろの敵機のインデックスを調整
+        for destroyed_idx in destroyed_indices.iter().rev() {
+            for locked_idx in &mut self.locked_enemies {
+                if *locked_idx > *destroyed_idx {
+                    *locked_idx -= 1;
+                }
+            }
+        }
+        
+        if removed_count > 0 {
+            println!("Removed {} destroyed enemies from lock-on list", removed_count);
+        }
+    }
 }
 
 // メインゲーム構造体
@@ -417,6 +450,11 @@ impl Game {
         lasers_to_remove.dedup();
         enemies_to_remove.sort_unstable();
         enemies_to_remove.dedup();
+        
+        // 撃破された敵機のロックオン解除（敵機削除前に実行）
+        if !enemies_to_remove.is_empty() {
+            self.lock_system.remove_destroyed_enemies(&enemies_to_remove);
+        }
         
         // 逆順で削除（インデックスのずれを防ぐ）
         for &idx in lasers_to_remove.iter().rev() {
