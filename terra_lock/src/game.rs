@@ -24,6 +24,15 @@ impl Player {
     }
 }
 
+// 敵機タイプ
+#[derive(Clone, Debug)]
+enum EnemyType {
+    Straight,    // 直線移動
+    Zigzag,      // ジグザグ移動
+    Arc,         // 円弧移動
+    Homing,      // 追尾移動
+}
+
 // 敵機構造体
 #[derive(Clone, Debug)]
 struct Enemy {
@@ -31,6 +40,9 @@ struct Enemy {
     velocity: Vec2,
     is_locked: bool,
     lock_timer: f32,
+    enemy_type: EnemyType,
+    spawn_time: f32,     // 出現時刻（動作パターン計算用）
+    base_speed: f32,     // 基本速度
 }
 
 // 通常レーザー構造体
@@ -298,6 +310,9 @@ impl Game {
             velocity: Vec2::new(0.0, 120.0), // 120px/秒で下向き
             is_locked: false,
             lock_timer: 0.0,
+            enemy_type: EnemyType::Straight,
+            spawn_time: get_time() as f32,
+            base_speed: 120.0,
         });
         
         game
@@ -506,8 +521,45 @@ impl Game {
         
         self.lock_on_lasers.retain(|laser| laser.progress < 1.0);
         
-        // 敵機の更新
+        // 敵機の更新（タイプ別動作パターン）
+        let current_time = get_time() as f32;
+        let player_pos = self.player.position; // プレイヤー位置を事前に取得
+        
         for enemy in &mut self.enemies {
+            let elapsed_time = current_time - enemy.spawn_time;
+            
+            match enemy.enemy_type {
+                EnemyType::Straight => {
+                    // 直線移動（既存の動作）
+                    enemy.velocity = Vec2::new(0.0, enemy.base_speed);
+                }
+                
+                EnemyType::Zigzag => {
+                    // ジグザグ移動
+                    let zigzag_frequency = 2.0; // 振動の周波数
+                    let zigzag_amplitude = 80.0; // 振幅
+                    let horizontal_speed = (elapsed_time * zigzag_frequency).sin() * zigzag_amplitude;
+                    enemy.velocity = Vec2::new(horizontal_speed, enemy.base_speed);
+                }
+                
+                EnemyType::Arc => {
+                    // 円弧移動
+                    let arc_frequency = 1.5;
+                    let arc_amplitude = 60.0;
+                    let horizontal_speed = (elapsed_time * arc_frequency).cos() * arc_amplitude;
+                    let vertical_speed = enemy.base_speed * 0.8; // 少し遅めに下降
+                    enemy.velocity = Vec2::new(horizontal_speed, vertical_speed);
+                }
+                
+                EnemyType::Homing => {
+                    // 追尾移動（プレイヤーに向かう）
+                    let direction = (player_pos - enemy.position).normalize();
+                    let homing_speed = enemy.base_speed * 0.7; // 追尾は少し遅め
+                    enemy.velocity = direction * homing_speed;
+                }
+            }
+            
+            // 位置を更新
             enemy.position += enemy.velocity * delta_time;
         }
         
@@ -681,11 +733,25 @@ impl Game {
         
         let y = -enemy_radius; // 画面上部の少し外側から出現
         
+        // 敵機タイプをランダムに選択
+        let enemy_type = match gen_range(0, 4) {
+            0 => EnemyType::Straight,
+            1 => EnemyType::Zigzag,
+            2 => EnemyType::Arc,
+            _ => EnemyType::Homing,
+        };
+        
+        let base_speed = 120.0;
+        let current_time = get_time() as f32;
+        
         self.enemies.push(Enemy {
             position: Vec2::new(x, y),
-            velocity: Vec2::new(0.0, 120.0), // 120px/秒で下向き移動
+            velocity: Vec2::new(0.0, base_speed), // 初期速度（後で動作パターンで変更）
             is_locked: false,
             lock_timer: 0.0,
+            enemy_type,
+            spawn_time: current_time,
+            base_speed,
         });
     }
     
@@ -789,10 +855,19 @@ impl Game {
         ];
         draw_triangle(vertices[0], vertices[1], vertices[2], BLUE);
         
-        // 敵機の描画 - 赤い円（直径20px）、ロックオン時は黄色
+        // 敵機の描画 - タイプ別色分け、ロックオン時は黄色
         for enemy in &self.enemies {
-            let color = if enemy.is_locked { YELLOW } else { RED };
-            draw_circle(enemy.position.x, enemy.position.y, 10.0, color);
+            let base_color = if enemy.is_locked {
+                YELLOW
+            } else {
+                match enemy.enemy_type {
+                    EnemyType::Straight => RED,           // 直線: 赤
+                    EnemyType::Zigzag => ORANGE,          // ジグザグ: オレンジ
+                    EnemyType::Arc => PURPLE,             // 円弧: 紫
+                    EnemyType::Homing => Color::new(1.0, 0.0, 0.5, 1.0), // 追尾: ピンク
+                }
+            };
+            draw_circle(enemy.position.x, enemy.position.y, 10.0, base_color);
         }
         
         // 通常レーザーの描画 - シアンの線（幅3px）
