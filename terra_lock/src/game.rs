@@ -3,6 +3,7 @@ use macroquad::rand::gen_range;
 
 #[derive(Clone, Debug)]
 enum GameState {
+    Title,
     Playing,
     GameOver,
 }
@@ -279,7 +280,7 @@ impl Game {
     }
     fn new() -> Self {
         let mut game = Self {
-            state: GameState::Playing,
+            state: GameState::Title, // タイトル画面から開始
             player: Player::new(),
             enemies: Vec::new(),
             normal_lasers: Vec::new(),
@@ -305,6 +306,13 @@ impl Game {
     fn update(&mut self, delta_time: f32) {
         // ゲーム状態に応じた処理分岐
         match self.state {
+            GameState::Title => {
+                // タイトル画面での入力処理
+                self.input.update(delta_time);
+                if self.input.left_button_just_pressed {
+                    self.start_game();
+                }
+            }
             GameState::Playing => {
                 self.update_playing(delta_time);
             }
@@ -316,6 +324,28 @@ impl Game {
                 }
             }
         }
+    }
+    
+    fn start_game(&mut self) {
+        // タイトル画面からゲーム開始
+        self.state = GameState::Playing;
+        self.score = 0;
+        self.enemy_spawn_timer = 0.0;
+        
+        // プレイヤーを初期位置に設定
+        self.player.position = Vec2::new(400.0, 500.0);
+        
+        // 全てのオブジェクトをクリア
+        self.enemies.clear();
+        self.normal_lasers.clear();
+        self.lock_on_lasers.clear();
+        self.bonus_displays.clear();
+        
+        // ロックオンシステムをリセット
+        self.lock_system.active = false;
+        self.lock_system.locked_enemies.clear();
+        
+        println!("Game Started!");
     }
     
     fn restart_game(&mut self) {
@@ -662,12 +692,88 @@ impl Game {
     fn draw(&self) {
         // ゲーム状態に応じた描画処理
         match self.state {
+            GameState::Title => {
+                self.draw_title();
+            }
             GameState::Playing => {
                 self.draw_playing();
             }
             GameState::GameOver => {
                 self.draw_game_over();
             }
+        }
+    }
+    
+    fn draw_title(&self) {
+        // タイトル画面の背景（濃い青）
+        draw_rectangle(0.0, 0.0, 800.0, 600.0, Color::new(0.0, 0.0, 0.2, 1.0));
+        
+        // ゲームタイトル（中央上部、大きな文字）
+        let title_text = "TERRA LOCK";
+        let title_width = 48.0 * title_text.len() as f32 * 0.6; // 概算幅
+        draw_text(
+            title_text,
+            (800.0 - title_width) / 2.0,
+            200.0,
+            48.0,
+            WHITE
+        );
+        
+        // サブタイトル（蒼穹紅蓮隊風ロックオンレーザーゲーム）
+        let subtitle_text = "Lock-on Laser Shooting Game";
+        let subtitle_width = 20.0 * subtitle_text.len() as f32 * 0.6; // 概算幅
+        draw_text(
+            subtitle_text,
+            (800.0 - subtitle_width) / 2.0,
+            240.0,
+            20.0,
+            Color::new(0.8, 0.8, 1.0, 1.0) // 薄い青
+        );
+        
+        // 操作説明（中央）
+        let instructions = [
+            "HOW TO PLAY:",
+            "",
+            "Mouse: Move your ship",
+            "Click: Fire normal laser",
+            "Hold: Lock-on wireframe",
+            "Release: Fire homing lasers",
+            "",
+            "Destroy enemies to earn points!",
+            "Lock-on multiple enemies for bonus!"
+        ];
+        
+        for (i, instruction) in instructions.iter().enumerate() {
+            let y_pos = 320.0 + (i as f32 * 20.0);
+            let text_width = 16.0 * instruction.len() as f32 * 0.6;
+            draw_text(
+                instruction,
+                (800.0 - text_width) / 2.0,
+                y_pos,
+                16.0,
+                if instruction.is_empty() { Color::new(0.0, 0.0, 0.0, 0.0) } else { WHITE }
+            );
+        }
+        
+        // スタート指示（下部、点滅効果）
+        let time = get_time() as f32;
+        let alpha = (time * 2.0).sin() * 0.3 + 0.7; // 0.4〜1.0の範囲で点滅
+        let start_text = "Click to Start";
+        let start_width = 24.0 * start_text.len() as f32 * 0.6;
+        draw_text(
+            start_text,
+            (800.0 - start_width) / 2.0,
+            520.0,
+            24.0,
+            Color::new(1.0, 1.0, 0.0, alpha) // 黄色で点滅
+        );
+        
+        // 装飾的な星（背景）
+        for i in 0..20 {
+            let x = (i as f32 * 37.0) % 800.0;
+            let y = (i as f32 * 43.0 + time * 10.0) % 600.0;
+            let size = 1.0 + (i as f32 * 0.1) % 2.0;
+            draw_circle(x, y, size, Color::new(1.0, 1.0, 1.0, 0.3));
         }
     }
     
