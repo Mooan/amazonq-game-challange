@@ -170,6 +170,15 @@ impl Game {
         
         self.player.position = Vec2::new(clamped_x, clamped_y);
         
+        // 敵機の更新
+        for enemy in &mut self.enemies {
+            enemy.position += enemy.velocity * delta_time;
+        }
+        
+        // 画面外の敵機を削除
+        self.enemies.retain(|enemy| enemy.position.y < screen_height + 50.0);
+        
+        // TODO: 敵機の生成処理
         // TODO: その他のゲームロジックの更新
     }
     
@@ -185,8 +194,10 @@ impl Game {
         ];
         draw_triangle(vertices[0], vertices[1], vertices[2], BLUE);
         
-        // テスト用の敵機描画（後で削除予定）
-        draw_circle(200.0, 200.0, 10.0, RED);
+        // 敵機の描画 - 赤い円（直径20px）
+        for enemy in &self.enemies {
+            draw_circle(enemy.position.x, enemy.position.y, 10.0, RED);
+        }
         
         // テスト用のレーザー描画（後で削除予定）
         draw_line(100.0, 100.0, 200.0, 150.0, 2.0, Color::new(0.0, 1.0, 1.0, 1.0)); // CYAN
