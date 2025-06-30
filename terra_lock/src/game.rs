@@ -207,6 +207,40 @@ impl LockOnSystem {
 }
 
 // メインゲーム構造体
+#[derive(Debug, Clone)]
+struct BonusDisplay {
+    text: String,
+    position: Vec2,
+    timer: f32,
+    max_time: f32,
+}
+
+impl BonusDisplay {
+    fn new(text: String, position: Vec2) -> Self {
+        Self {
+            text,
+            position,
+            timer: 0.0,
+            max_time: 2.0, // 2秒間表示
+        }
+    }
+    
+    fn update(&mut self, delta_time: f32) {
+        self.timer += delta_time;
+        // フェードアウト効果のために上に移動
+        self.position.y -= 30.0 * delta_time;
+    }
+    
+    fn is_expired(&self) -> bool {
+        self.timer >= self.max_time
+    }
+    
+    fn get_alpha(&self) -> f32 {
+        // フェードアウト効果
+        (1.0 - (self.timer / self.max_time)).max(0.0)
+    }
+}
+
 #[derive(Debug)]
 struct Game {
     state: GameState,
@@ -218,6 +252,7 @@ struct Game {
     score: u32,
     input: InputState,
     enemy_spawn_timer: f32,
+    bonus_displays: Vec<BonusDisplay>,
 }
 
 impl Game {
@@ -232,6 +267,7 @@ impl Game {
             score: 0,
             input: InputState::new(),
             enemy_spawn_timer: 0.0,
+            bonus_displays: Vec::new(),
         };
         
         // テスト用敵機を追加（描画確認用）
@@ -274,6 +310,7 @@ impl Game {
         self.enemies.clear();
         self.normal_lasers.clear();
         self.lock_on_lasers.clear();
+        self.bonus_displays.clear();
         
         println!("Game Restarted!");
     }
@@ -360,6 +397,12 @@ impl Game {
             
             if bonus_score > 0 {
                 self.score += bonus_score;
+                
+                // ボーナススコア表示を追加
+                let bonus_text = format!("BONUS +{}", bonus_score);
+                let display_pos = Vec2::new(400.0, 300.0); // 画面中央
+                self.bonus_displays.push(BonusDisplay::new(bonus_text, display_pos));
+                
                 println!("Lock-on laser hits: {} enemies, +{} points (base) + {} points (bonus) = {} total", 
                          completed_lasers, base_score, bonus_score, base_score + bonus_score);
             } else {
@@ -382,6 +425,14 @@ impl Game {
         
         // 画面外の敵機を削除
         self.enemies.retain(|enemy| enemy.position.y < screen_height + 50.0);
+        
+        // ボーナス表示の更新
+        for bonus_display in &mut self.bonus_displays {
+            bonus_display.update(delta_time);
+        }
+        
+        // 期限切れのボーナス表示を削除
+        self.bonus_displays.retain(|display| !display.is_expired());
         
         // TODO: その他のゲームロジックの更新
     }
@@ -622,6 +673,19 @@ impl Game {
             _ => RED,             // 7機以上: 赤
         };
         draw_text(&format!("LOCK: {}/6", lock_count), 20.0, 55.0, 16.0, lock_color);
+        
+        // ボーナススコア表示
+        for bonus_display in &self.bonus_displays {
+            let alpha = bonus_display.get_alpha();
+            let color = Color::new(1.0, 1.0, 0.0, alpha); // 黄色でフェードアウト
+            draw_text(
+                &bonus_display.text,
+                bonus_display.position.x - 50.0, // 中央揃え調整
+                bonus_display.position.y,
+                24.0, // フォントサイズ
+                color
+            );
+        }
     }
     
     fn draw_game_over(&self) {
