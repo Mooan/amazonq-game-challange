@@ -60,7 +60,10 @@ struct LockOnLaser {
     target_pos: Vec2,
     target_enemy_id: Option<usize>, // 追跡対象の敵機ID
     progress: f32,
-    speed: f32,
+    initial_speed: f32,    // 初期速度
+    current_speed: f32,    // 現在の速度
+    acceleration: f32,     // 加速度
+    launch_time: f32,      // 発射時刻
 }
 
 // 入力状態管理
@@ -438,7 +441,9 @@ impl Game {
         // 寿命切れまたは画面外のレーザーを削除
         self.normal_lasers.retain(|laser| laser.lifetime > 0.0 && laser.position.y > -50.0);
         
-        // ホーミングレーザーの更新（動的ターゲット追跡）
+        // ホーミングレーザーの更新（動的ターゲット追跡 + 加速）
+        let current_time = get_time() as f32;
+        
         for laser in &mut self.lock_on_lasers {
             // 対象敵機が存在する場合、ターゲット位置を更新
             if let Some(enemy_id) = laser.target_enemy_id {
@@ -451,8 +456,20 @@ impl Game {
                 }
             }
             
-            laser.progress += laser.speed * delta_time / 1000.0; // 進行度を0-1で管理
-            laser.progress = laser.progress.min(1.0);
+            // 加速処理：時間経過に応じて速度を増加
+            let elapsed_time = current_time - laser.launch_time;
+            laser.current_speed = laser.initial_speed + (laser.acceleration * elapsed_time);
+            
+            // 最大速度制限を70%に調整（560px/秒）
+            laser.current_speed = laser.current_speed.min(560.0);
+            
+            // 進行度を更新（加速を考慮した距離計算）
+            let distance = laser.start_pos.distance(laser.target_pos);
+            if distance > 0.0 {
+                let speed_progress = laser.current_speed * delta_time / distance;
+                laser.progress += speed_progress;
+                laser.progress = laser.progress.min(1.0);
+            }
         }
         
         // 完了したホーミングレーザーの処理と敵機削除
@@ -613,6 +630,7 @@ impl Game {
     
     fn fire_lock_on_lasers(&mut self) {
         let player_pos = self.player.position;
+        let current_time = get_time() as f32;
         
         for &enemy_idx in &self.lock_system.locked_enemies {
             if enemy_idx < self.enemies.len() {
@@ -623,7 +641,10 @@ impl Game {
                     target_pos,
                     target_enemy_id: Some(enemy_idx), // 敵機IDを設定
                     progress: 0.0,
-                    speed: 400.0, // 400px/秒でホーミング
+                    initial_speed: 140.0,    // 初期速度を70%に調整（200→140）
+                    current_speed: 140.0,    // 現在の速度
+                    acceleration: 560.0,     // 加速度を70%に調整（800→560）
+                    launch_time: current_time,
                 });
             }
         }
@@ -710,7 +731,7 @@ impl Game {
         // プレイヤーの位置から上向きにレーザーを発射
         self.normal_lasers.push(NormalLaser {
             position: self.player.position,
-            velocity: Vec2::new(0.0, -300.0), // 300px/秒で上向き
+            velocity: Vec2::new(0.0, -350.0), // 350px/秒で上向き（微調整：300→350）
             lifetime: 3.0, // 3秒間の寿命
         });
     }
