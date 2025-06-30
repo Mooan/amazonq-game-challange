@@ -270,6 +270,7 @@ struct Game {
     input: InputState,
     enemy_spawn_timer: f32,
     bonus_displays: Vec<BonusDisplay>,
+    game_start_time: f32,  // ゲーム開始時刻（難易度カーブ用）
 }
 
 impl Game {
@@ -305,6 +306,7 @@ impl Game {
             input: InputState::new(),
             enemy_spawn_timer: 0.0,
             bonus_displays: Vec::new(),
+            game_start_time: get_time() as f32,
         };
         
         // テスト用敵機を追加（描画確認用）
@@ -349,6 +351,7 @@ impl Game {
         self.state = GameState::Playing;
         self.score = 0;
         self.enemy_spawn_timer = 0.0;
+        self.game_start_time = get_time() as f32;  // ゲーム開始時刻をリセット
         
         // プレイヤーを初期位置に設定
         self.player.position = Vec2::new(400.0, 500.0);
@@ -371,6 +374,7 @@ impl Game {
         self.state = GameState::Playing;
         self.score = 0;
         self.enemy_spawn_timer = 0.0;
+        self.game_start_time = get_time() as f32;  // ゲーム開始時刻をリセット
         
         // プレイヤーを初期位置に戻す
         self.player.position = Vec2::new(400.0, 500.0);
@@ -414,20 +418,26 @@ impl Game {
             self.fire_normal_laser();
         }
         
-        // 敵機出現システム（ロックオン動作確認用に強化）
+        // 敵機出現システム（難易度カーブ対応）
         self.enemy_spawn_timer += delta_time;
-        if self.enemy_spawn_timer >= 1.5 { // 1.5秒間隔で出現（短縮）
-            // 30%の確率で2機同時出現、10%の確率で3機同時出現
-            let spawn_count = if gen_range(0.0, 1.0) < 0.1 {
-                3 // 10%の確率で3機
+        let (spawn_interval, max_spawn_count, speed_multiplier) = self.calculate_difficulty_parameters();
+        
+        if self.enemy_spawn_timer >= spawn_interval {
+            // 難易度に応じた出現数の決定
+            let spawn_count = if max_spawn_count >= 5 && gen_range(0.0, 1.0) < 0.05 {
+                5 // 高難易度時：5%の確率で5機
+            } else if max_spawn_count >= 4 && gen_range(0.0, 1.0) < 0.1 {
+                4 // 中難易度時：10%の確率で4機
+            } else if max_spawn_count >= 3 && gen_range(0.0, 1.0) < 0.15 {
+                3 // 15%の確率で3機
             } else if gen_range(0.0, 1.0) < 0.3 {
                 2 // 30%の確率で2機
             } else {
-                1 // 60%の確率で1機
+                1 // 40%の確率で1機
             };
             
             for _ in 0..spawn_count {
-                self.spawn_enemy();
+                self.spawn_enemy_with_difficulty(speed_multiplier);
             }
             self.enemy_spawn_timer = 0.0;
         }
@@ -736,7 +746,26 @@ impl Game {
         });
     }
     
-    fn spawn_enemy(&mut self) {
+    fn calculate_difficulty_parameters(&self) -> (f32, i32, f32) {
+        let current_time = get_time() as f32;
+        let elapsed_time = current_time - self.game_start_time;
+        
+        // 難易度段階（30秒ごとに上昇）
+        let difficulty_level = (elapsed_time / 30.0).floor() as i32;
+        
+        // 敵機出現間隔（1.5秒 → 0.8秒まで段階的に短縮）
+        let spawn_interval = (1.5 - (difficulty_level as f32 * 0.1)).max(0.8);
+        
+        // 最大同時出現数（3機 → 5機まで段階的に増加）
+        let max_spawn_count = (3 + difficulty_level).min(5);
+        
+        // 敵機速度倍率（1.0 → 1.5まで段階的に上昇）
+        let speed_multiplier = 1.0 + (difficulty_level as f32 * 0.1).min(0.5);
+        
+        (spawn_interval, max_spawn_count, speed_multiplier)
+    }
+    
+    fn spawn_enemy_with_difficulty(&mut self, speed_multiplier: f32) {
         let screen_width = 800.0;
         let enemy_radius = 10.0;
         
@@ -762,7 +791,7 @@ impl Game {
             _ => EnemyType::Homing,
         };
         
-        let base_speed = 120.0;
+        let base_speed = 120.0 * speed_multiplier; // 難易度に応じた速度調整
         let current_time = get_time() as f32;
         
         self.enemies.push(Enemy {
@@ -1092,6 +1121,15 @@ impl Game {
         draw_text(
             &format!("Button: {}", button_status),
             screen_width() - 250.0, 80.0, 14.0, button_color
+        );
+        
+        // 難易度情報表示 - 14px monospace
+        let (spawn_interval, max_spawn, speed_mult) = self.calculate_difficulty_parameters();
+        let elapsed_time = get_time() as f32 - self.game_start_time;
+        draw_text(
+            &format!("Time: {:.1}s | Interval: {:.1}s | Max: {} | Speed: {:.1}x", 
+                elapsed_time, spawn_interval, max_spawn, speed_mult),
+            screen_width() - 400.0, 105.0, 14.0, YELLOW
         );
     }
     
