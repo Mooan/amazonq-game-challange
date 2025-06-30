@@ -374,8 +374,8 @@ impl Game {
                                  + (enemy.position.y - closest_y).powi(2);
             
             if distance_squared <= enemy_radius.powi(2) {
-                // 自機と敵機が衝突した場合
-                // TODO: ゲームオーバー処理（Task 2.6で実装予定）
+                // 自機と敵機が衝突した場合、ゲーム状態をGameOverに変更
+                self.state = GameState::GameOver;
                 println!("Player hit by enemy! Game Over!");
                 break;
             }
