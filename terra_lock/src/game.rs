@@ -209,10 +209,56 @@ impl Game {
             enemy.position += enemy.velocity * delta_time;
         }
         
+        // レーザーと敵機の当たり判定
+        self.check_laser_enemy_collision();
+        
+        // 敵機と自機の当たり判定
+        self.check_player_enemy_collision();
+        
         // 画面外の敵機を削除
         self.enemies.retain(|enemy| enemy.position.y < screen_height + 50.0);
         
         // TODO: その他のゲームロジックの更新
+    }
+    
+    fn check_laser_enemy_collision(&mut self) {
+        let mut lasers_to_remove = Vec::new();
+        let mut enemies_to_remove = Vec::new();
+        
+        for (laser_idx, laser) in self.normal_lasers.iter().enumerate() {
+            for (enemy_idx, enemy) in self.enemies.iter().enumerate() {
+                // 円と点の当たり判定（レーザーは点、敵機は半径10pxの円）
+                let distance_squared = (laser.position.x - enemy.position.x).powi(2) 
+                                     + (laser.position.y - enemy.position.y).powi(2);
+                let enemy_radius: f32 = 10.0;
+                
+                if distance_squared <= enemy_radius.powi(2) {
+                    // 当たり判定発生
+                    lasers_to_remove.push(laser_idx);
+                    enemies_to_remove.push(enemy_idx);
+                    break; // このレーザーは1つの敵にのみ当たる
+                }
+            }
+        }
+        
+        // 重複を除去してソート（逆順で削除）
+        lasers_to_remove.sort_unstable();
+        lasers_to_remove.dedup();
+        enemies_to_remove.sort_unstable();
+        enemies_to_remove.dedup();
+        
+        // 逆順で削除（インデックスのずれを防ぐ）
+        for &idx in lasers_to_remove.iter().rev() {
+            if idx < self.normal_lasers.len() {
+                self.normal_lasers.remove(idx);
+            }
+        }
+        
+        for &idx in enemies_to_remove.iter().rev() {
+            if idx < self.enemies.len() {
+                self.enemies.remove(idx);
+            }
+        }
     }
     
     fn fire_normal_laser(&mut self) {
