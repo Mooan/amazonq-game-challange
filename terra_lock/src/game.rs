@@ -727,8 +727,8 @@ impl Game {
             self.draw_wireframe();
         }
         
-        // UI表示
-        draw_text(&format!("SCORE: {}", self.score), 20.0, 30.0, 20.0, WHITE);
+        // UI表示 - スコア（16px monospace）
+        draw_text(&format!("SCORE: {}", self.score), 20.0, 30.0, 16.0, WHITE);
         
         // ロックオン数表示（ロックオン数に応じた色変化）
         let lock_count = self.lock_system.locked_enemies.len();
@@ -792,14 +792,14 @@ impl Game {
             WHITE
         );
         
-        // リスタート指示
+        // リスタート指示（16px monospace）
         let restart_text = "Click to Restart";
-        let restart_width = 20.0 * restart_text.len() as f32 * 0.6; // 概算幅
+        let restart_width = 16.0 * restart_text.len() as f32 * 0.6; // 概算幅
         draw_text(
             restart_text,
             (800.0 - restart_width) / 2.0,
             400.0,
-            20.0,
+            16.0, // 16px統一
             YELLOW
         );
     }
@@ -862,17 +862,17 @@ impl Game {
     }
     
     fn draw_debug_info(&self, fps: f32) {
-        // FPS表示（パフォーマンス監視）
+        // FPS表示（パフォーマンス監視）- 14px monospace
         let fps_color = if fps >= 60.0 { GREEN } else if fps >= 45.0 { YELLOW } else { RED };
-        draw_text(&format!("FPS: {:.1}", fps), screen_width() - 100.0, 30.0, 20.0, fps_color);
+        draw_text(&format!("FPS: {:.1}", fps), screen_width() - 100.0, 30.0, 14.0, fps_color);
         
-        // マウス座標表示
+        // マウス座標表示 - 14px monospace
         draw_text(
             &format!("Mouse: ({:.0}, {:.0})", self.input.mouse_pos.x, self.input.mouse_pos.y),
-            screen_width() - 200.0, 55.0, 16.0, WHITE
+            screen_width() - 200.0, 55.0, 14.0, WHITE
         );
         
-        // マウスボタン状態表示
+        // マウスボタン状態表示 - 14px monospace
         let button_status = if self.input.left_button_pressed {
             if self.input.is_long_press() {
                 format!("LONG PRESS ({:.1}s)", self.input.left_button_hold_time)
@@ -889,7 +889,7 @@ impl Game {
         
         draw_text(
             &format!("Button: {}", button_status),
-            screen_width() - 250.0, 80.0, 16.0, button_color
+            screen_width() - 250.0, 80.0, 14.0, button_color
         );
     }
     
