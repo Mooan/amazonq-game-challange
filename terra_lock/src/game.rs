@@ -162,6 +162,39 @@ impl Game {
     }
     
     fn update(&mut self, delta_time: f32) {
+        // ゲーム状態に応じた処理分岐
+        match self.state {
+            GameState::Playing => {
+                self.update_playing(delta_time);
+            }
+            GameState::GameOver => {
+                // ゲームオーバー状態でのリスタート処理
+                self.input.update(delta_time);
+                if self.input.left_button_just_pressed {
+                    self.restart_game();
+                }
+            }
+        }
+    }
+    
+    fn restart_game(&mut self) {
+        // ゲーム状態をリセット
+        self.state = GameState::Playing;
+        self.score = 0;
+        self.enemy_spawn_timer = 0.0;
+        
+        // プレイヤーを初期位置に戻す
+        self.player.position = Vec2::new(400.0, 500.0);
+        
+        // 全てのオブジェクトをクリア
+        self.enemies.clear();
+        self.normal_lasers.clear();
+        self.lock_on_lasers.clear();
+        
+        println!("Game Restarted!");
+    }
+    
+    fn update_playing(&mut self, delta_time: f32) {
         // 入力状態更新
         self.input.update(delta_time);
         
@@ -291,6 +324,18 @@ impl Game {
     }
     
     fn draw(&self) {
+        // ゲーム状態に応じた描画処理
+        match self.state {
+            GameState::Playing => {
+                self.draw_playing();
+            }
+            GameState::GameOver => {
+                self.draw_game_over();
+            }
+        }
+    }
+    
+    fn draw_playing(&self) {
         // プレイヤー（自機）の描画 - 青い三角形（20x15px）
         let player_pos = self.player.position;
         let width = 20.0;   // 幅20px
@@ -323,6 +368,44 @@ impl Game {
         // UI表示
         draw_text(&format!("SCORE: {}", self.score), 20.0, 30.0, 20.0, WHITE);
         draw_text("LOCK: 0/6", 20.0, 55.0, 16.0, YELLOW);
+    }
+    
+    fn draw_game_over(&self) {
+        // 背景を暗くする
+        draw_rectangle(0.0, 0.0, 800.0, 600.0, Color::new(0.0, 0.0, 0.0, 0.7));
+        
+        // ゲームオーバー表示（中央、赤文字、48px）
+        let game_over_text = "GAME OVER";
+        let text_width = 48.0 * game_over_text.len() as f32 * 0.6; // 概算幅
+        draw_text(
+            game_over_text,
+            (800.0 - text_width) / 2.0,
+            300.0,
+            48.0,
+            RED
+        );
+        
+        // 最終スコア表示
+        let score_text = format!("FINAL SCORE: {}", self.score);
+        let score_width = 24.0 * score_text.len() as f32 * 0.6; // 概算幅
+        draw_text(
+            &score_text,
+            (800.0 - score_width) / 2.0,
+            350.0,
+            24.0,
+            WHITE
+        );
+        
+        // リスタート指示
+        let restart_text = "Click to Restart";
+        let restart_width = 20.0 * restart_text.len() as f32 * 0.6; // 概算幅
+        draw_text(
+            restart_text,
+            (800.0 - restart_width) / 2.0,
+            400.0,
+            20.0,
+            YELLOW
+        );
     }
     
     fn draw_debug_info(&self, fps: f32) {

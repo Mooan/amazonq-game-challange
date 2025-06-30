@@ -65,10 +65,10 @@
 - [x] スコア表示UI（左上、白文字）
 
 ### Task 2.6: ゲーム状態管理
-- [ ] ゲーム状態enum定義（Playing, GameOver）
-- [ ] ゲームオーバー判定
-- [ ] ゲームオーバー画面表示
-- [ ] ゲームリスタート機能
+- [x] ゲーム状態enum定義（Playing, GameOver）
+- [x] ゲームオーバー判定
+- [x] ゲームオーバー画面表示
+- [x] ゲームリスタート機能
 
 ### Task 2.7: WebAssembly継続検証（Phase 2）
 - [ ] Phase 2完了時のWebAssembly動作確認
