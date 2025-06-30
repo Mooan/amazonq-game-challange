@@ -161,11 +161,12 @@ impl Game {
     fn draw(&self) {
         // プレイヤー（自機）の描画 - 青い三角形（20x15px）
         let player_pos = self.player.position;
-        let size = 10.0; // 20x15pxの半分のサイズ
+        let width = 20.0;   // 幅20px
+        let height = 15.0;  // 高さ15px
         let vertices = [
-            Vec2::new(player_pos.x, player_pos.y - size),           // 上頂点
-            Vec2::new(player_pos.x - size * 0.8, player_pos.y + size * 0.75), // 左下
-            Vec2::new(player_pos.x + size * 0.8, player_pos.y + size * 0.75), // 右下
+            Vec2::new(player_pos.x, player_pos.y - height / 2.0),                    // 上頂点
+            Vec2::new(player_pos.x - width / 2.0, player_pos.y + height / 2.0),     // 左下
+            Vec2::new(player_pos.x + width / 2.0, player_pos.y + height / 2.0),     // 右下
         ];
         draw_triangle(vertices[0], vertices[1], vertices[2], BLUE);
         
