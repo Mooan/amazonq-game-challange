@@ -120,6 +120,24 @@ impl LockOnSystem {
             max_targets: 6,
         }
     }
+    
+    // ロックオン解除システム
+    fn clear_all_locks(&mut self, enemies: &mut [Enemy]) {
+        // 全ての敵機のロックオン状態をクリア
+        for &enemy_idx in &self.locked_enemies {
+            if enemy_idx < enemies.len() {
+                enemies[enemy_idx].is_locked = false;
+            }
+        }
+        
+        // ロックオンリストをクリア
+        self.locked_enemies.clear();
+        
+        // ワイヤーフレームを非表示
+        self.active = false;
+        
+        println!("All lock-on targets cleared");
+    }
 }
 
 // メインゲーム構造体
@@ -275,14 +293,19 @@ impl Game {
             // ワイヤーフレーム内の敵機検出
             self.detect_enemies_in_wireframe();
         } else if self.input.left_button_just_released && self.lock_system.active {
-            // マウスボタンリリース時の一斉発射
-            self.fire_lock_on_lasers();
+            // マウスボタンリリース時の処理
+            if !self.lock_system.locked_enemies.is_empty() {
+                // ロックオン対象がある場合は一斉発射
+                self.fire_lock_on_lasers();
+            }
             
-            self.lock_system.active = false;
-            self.lock_system.locked_enemies.clear();
+            // マウスボタンリリース時の完全解除
+            self.lock_system.clear_all_locks(&mut self.enemies);
         } else if !self.input.left_button_pressed {
-            self.lock_system.active = false;
-            self.lock_system.locked_enemies.clear();
+            // マウスボタンが押されていない場合も解除
+            if self.lock_system.active {
+                self.lock_system.clear_all_locks(&mut self.enemies);
+            }
         }
     }
     
